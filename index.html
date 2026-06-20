@@ -16,27 +16,41 @@
     --accent: #2B2D42; --radius: 10px; --radius-sm: 6px; --header-h: 74px;
     --new: #E8650A;
   }
-  html, body { height: 100%; overflow: hidden; }
-  body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); display: flex; flex-direction: column; }
+  html, body { height: 100%; }
+  body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); display: flex; flex-direction: column; overflow: hidden; }
   header { height: var(--header-h); min-height: var(--header-h); background: var(--accent); color: #F7F6F2; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; }
   .logo { height: 85px; display: block; padding: 6px 0; }
   .header-center { display: flex; align-items: baseline; gap: 16px; }
   .header-greeting { font-family: 'Playfair Display', serif; font-size: 17px; color: rgba(247,246,242,0.92); }
   .header-date { font-size: 12px; color: rgba(247,246,242,0.45); }
   .header-time { font-family: 'Playfair Display', serif; font-size: 17px; color: rgba(247,246,242,0.6); }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .timer-label { font-size: 10px; color: rgba(247,246,242,0.55); white-space: nowrap; font-weight: 500; }
+  .settings-btn { background: none; border: none; cursor: pointer; color: rgba(247,246,242,0.55); padding: 4px; display: flex; align-items: center; transition: color 0.15s; }
+  .settings-btn:hover { color: rgba(247,246,242,0.95); }
   .timer-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.15); }
   .timer-bar { height: 100%; background: rgba(255,255,255,0.75); transition: width 1s linear; }
-  .timer-label { font-size: 10px; color: rgba(247,246,242,0.55); white-space: nowrap; font-weight: 500; }
 
-  /* Grid: 4 news cols + 1 right col (weather compact top, regional bottom) */
-  main { flex: 1; overflow: hidden; padding: 12px 16px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr 1fr 1fr 200px; grid-template-rows: 1fr 1fr; }
+  main { flex: 1; overflow: hidden; padding: 12px 16px; display: flex; gap: 10px; }
+  #main-grid { flex: 1; display: grid; gap: 10px; min-height: 0; }
 
-  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 0; position: relative; }
   .card-header { padding: 8px 13px 7px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .card-title { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
-  .card-body { flex: 1; overflow: hidden; padding: 8px 13px; display: flex; flex-direction: column; min-height: 0; }
+  .card-body { flex: 1; overflow-y: auto; padding: 8px 13px; display: flex; flex-direction: column; min-height: 0; scrollbar-width: thin; }
+  .card-body::-webkit-scrollbar { width: 5px; }
+  .card-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  .card-body::-webkit-scrollbar-track { background: transparent; }
 
-  .news-list { display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+  /* Scroll fade hint at bottom of card */
+  .card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 14px;
+    background: linear-gradient(to bottom, transparent, var(--surface));
+    pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  }
+  .card.has-overflow::after { opacity: 1; }
+
+  .news-list { display: flex; flex-direction: column; }
   .news-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; flex-shrink: 0; align-items: flex-start; }
   .news-item:hover .news-headline { color: var(--accent); }
   .news-item:last-child { border-bottom: none; padding-bottom: 0; }
@@ -47,8 +61,7 @@
   .news-time { font-size: 10px; color: var(--text3); white-space: nowrap; }
   .new-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--new); flex-shrink: 0; }
 
-  /* Compact weather card */
-  .weather-compact { display: flex; flex-direction: column; gap: 8px; height: 100%; justify-content: space-between; }
+  .weather-compact { display: flex; flex-direction: column; gap: 8px; height: auto; justify-content: space-between; }
   .weather-top { display: flex; align-items: flex-end; gap: 8px; }
   .weather-temp { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 400; line-height: 1; }
   .weather-desc { color: var(--text2); font-size: 11px; line-height: 1.5; padding-bottom: 2px; }
@@ -63,17 +76,61 @@
   .loading { color: var(--text3); font-size: 11px; padding: 10px 0; text-align: center; }
   .error-msg { color: #A33030; font-size: 11px; padding: 6px 0; text-align: center; }
 
-  /* Grid placement */
-  .card-politik    { grid-column: 1; grid-row: 1; }
-  .card-wirtschaft { grid-column: 2; grid-row: 1; }
-  .card-wissen     { grid-column: 3; grid-row: 1; }
-  .card-klatsch    { grid-column: 4; grid-row: 1; }
-  .card-weather    { grid-column: 5; grid-row: 1; }
-  .card-kultur     { grid-column: 1; grid-row: 2; }
-  .card-sport      { grid-column: 2; grid-row: 2; }
-  .card-medien     { grid-column: 3; grid-row: 2; }
-  .card-ki         { grid-column: 4; grid-row: 2; }
-  .card-regional   { grid-column: 5; grid-row: 2; }
+  /* Footer */
+  footer { flex-shrink: 0; padding: 4px 16px 6px; text-align: right; }
+  .impressum-link { font-size: 10px; color: var(--text3); text-decoration: none; cursor: pointer; }
+  .impressum-link:hover { color: var(--text2); }
+
+  /* Settings panel */
+  .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .settings-overlay.open { display: flex; }
+  .settings-panel { background: var(--surface); border-radius: var(--radius); padding: 20px 24px; width: 320px; max-height: 80vh; overflow-y: auto; }
+  .settings-panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); }
+  .settings-row:last-child { border-bottom: none; }
+  .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: var(--border2); border-radius: 20px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+  .settings-close { margin-top: 16px; width: 100%; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .settings-close:hover { opacity: 0.9; }
+  .settings-panel { width: 360px; }
+  .settings-row { flex-wrap: wrap; gap: 4px 0; }
+  .settings-controls { display: flex; align-items: center; gap: 8px; }
+  .focus-btn { font-size: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--text2); font-family: 'Inter', sans-serif; transition: all 0.15s; white-space: nowrap; line-height: 1.6; }
+  .focus-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .focus-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .focus-hint { font-size: 10px; color: var(--text3); width: 100%; padding-bottom: 2px; }
+  .card.is-focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+  /* Impressum popup */
+  .impressum-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .impressum-overlay.open { display: flex; }
+  .impressum-panel { background: var(--surface); border-radius: var(--radius); padding: 20px 24px; width: 360px; font-size: 12px; line-height: 1.6; color: var(--text2); }
+  .impressum-panel h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+  .impressum-close { margin-top: 14px; width: 100%; padding: 7px; background: var(--surface2); color: var(--text); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+  /* ===== Desktop layout ===== */
+  /* Weather sits as a fixed-width flex sibling next to #main-grid */
+  .card-weather    { align-self: flex-start; flex-shrink: 0; width: 200px; max-height: 320px; }
+
+  /* ===== Mobile layout ===== */
+  @media (max-width: 860px) {
+    html, body { overflow: auto; height: auto; }
+    header { padding: 0 16px; }
+    .logo { height: 56px; }
+    .header-center { display: none; }
+    main {
+      display: flex; flex-direction: column; overflow: visible;
+      padding: 12px; gap: 10px;
+    }
+    #main-grid { display: flex; flex-direction: column; overflow: visible; height: auto; gap: 10px; }
+    .card-weather { width: auto; max-height: 280px; flex-shrink: 1; align-self: auto; }
+    .card { min-height: 160px; max-height: 280px; }
+    .card-body { overflow-y: auto; }
+  }
 </style>
 </head>
 <body>
@@ -84,57 +141,375 @@
     <span class="header-date" id="header-date"></span>
     <span class="header-time" id="header-time"></span>
   </div>
-  <span class="timer-label" id="timer-label">Refresh in 60s</span>
+  <div class="header-right">
+    <span class="timer-label" id="timer-label">Refresh in 60s</span>
+    <button class="settings-btn" id="settings-toggle" title="Ressorts auswählen" aria-label="Einstellungen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 005 14.82 1.65 1.65 0 003.49 14H3a2 2 0 110-4h.09A1.65 1.65 0 005 9.18a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.36.36.51.79.51 1.4V11a2 2 0 110 4h-.09c-.61 0-1.04.15-1.4.51z"/></svg>
+    </button>
+  </div>
   <div class="timer-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
 </header>
 <main>
-  <div class="card card-politik">
+  <div id="main-grid">
+  <div class="card card-politik" data-ressort="politik">
     <div class="card-header"><span class="card-title">Politik</span></div>
     <div class="card-body"><div id="politik" class="news-list"><div class="loading">Laden…</div></div></div>
   </div>
-  <div class="card card-wirtschaft">
+  <div class="card card-wirtschaft" data-ressort="wirtschaft">
     <div class="card-header"><span class="card-title">Wirtschaft</span></div>
     <div class="card-body"><div id="wirtschaft" class="news-list"><div class="loading">Laden…</div></div></div>
   </div>
-  <div class="card card-wissen">
+  <div class="card card-wissen" data-ressort="wissen">
     <div class="card-header"><span class="card-title">Wissenschaft & Technik</span></div>
     <div class="card-body"><div id="wissen" class="news-list"><div class="loading">Laden…</div></div></div>
   </div>
-  <div class="card card-klatsch">
-    <div class="card-header"><span class="card-title">Klatsch & Tratsch</span></div>
-    <div class="card-body"><div id="klatsch" class="news-list"><div class="loading">Laden…</div></div></div>
+  <div class="card card-people" data-ressort="people">
+    <div class="card-header"><span class="card-title">People & Style</span></div>
+    <div class="card-body"><div id="people" class="news-list"><div class="loading">Laden…</div></div></div>
   </div>
-  <div class="card card-weather">
+  <div class="card card-kultur" data-ressort="kultur">
+    <div class="card-header"><span class="card-title">Kultur</span></div>
+    <div class="card-body"><div id="kultur" class="news-list"><div class="loading">Laden…</div></div></div>
+  </div>
+  <div class="card card-sport" data-ressort="sport">
+    <div class="card-header"><span class="card-title">Sport</span></div>
+    <div class="card-body"><div id="sport" class="news-list"><div class="loading">Laden…</div></div></div>
+  </div>
+  <div class="card card-medien" data-ressort="medien">
+    <div class="card-header"><span class="card-title">Medien & Digitales</span></div>
+    <div class="card-body"><div id="medien" class="news-list"><div class="loading">Laden…</div></div></div>
+  </div>
+  <div class="card card-ki" data-ressort="ki">
+    <div class="card-header"><span class="card-title">KI-News</span></div>
+    <div class="card-body"><div id="ki" class="news-list"><div class="loading">Laden…</div></div></div>
+  </div>
+  <div class="card card-regional" data-ressort="regional">
+    <div class="card-header"><span class="card-title">Regional</span></div>
+    <div class="card-body"><div id="regional" class="news-list"><div class="loading">Laden…</div></div></div>
+  </div>
+  </div><!-- end #main-grid -->
+  <div class="card card-weather" data-ressort="weather">
     <div class="card-header">
       <span class="card-title">Wetter · München</span>
       <span style="font-size:10px;color:var(--text3);" id="weather-updated"></span>
     </div>
     <div class="card-body" id="weather-body"><div class="loading">Laden…</div></div>
   </div>
-  <div class="card card-kultur">
-    <div class="card-header"><span class="card-title">Kultur</span></div>
-    <div class="card-body"><div id="kultur" class="news-list"><div class="loading">Laden…</div></div></div>
-  </div>
-  <div class="card card-sport">
-    <div class="card-header"><span class="card-title">Sport</span></div>
-    <div class="card-body"><div id="sport" class="news-list"><div class="loading">Laden…</div></div></div>
-  </div>
-  <div class="card card-medien">
-    <div class="card-header"><span class="card-title">Medien & Digitales</span></div>
-    <div class="card-body"><div id="medien" class="news-list"><div class="loading">Laden…</div></div></div>
-  </div>
-  <div class="card card-ki">
-    <div class="card-header"><span class="card-title">KI-News</span></div>
-    <div class="card-body"><div id="ki" class="news-list"><div class="loading">Laden…</div></div></div>
-  </div>
-  <div class="card card-regional">
-    <div class="card-header"><span class="card-title">Regional</span></div>
-    <div class="card-body"><div id="regional" class="news-list"><div class="loading">Laden…</div></div></div>
-  </div>
 </main>
+
+<footer>
+  <a class="impressum-link" id="impressum-open">Impressum</a>
+</footer>
+
+<!-- Settings Panel -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-panel">
+    <h3>Ressorts auswählen</h3>
+    <div id="settings-list"></div>
+    <button class="settings-close" id="settings-close">Fertig</button>
+  </div>
+</div>
+
+<!-- Impressum Popup -->
+<div class="impressum-overlay" id="impressum-overlay">
+  <div class="impressum-panel">
+    <h3>Impressum</h3>
+    <p>Dieses Dashboard ist ein privates Projekt von Matthias Stiefel. Es dient zur Veranschaulichung, wie einfach sich mit Unterstützung von KI ein funktionierendes Dashboard erstellen lässt.</p>
+    <p style="margin-top:8px;">Verantwortlich für Inhalt und technische Umsetzung: Matthias Stiefel, matthias.stiefel@sz.de</p>
+    <button class="impressum-close" id="impressum-close">Schließen</button>
+  </div>
+</div>
+
 <script>
 const PROXY = '/.netlify/functions/proxy?url=';
 const REFRESH_SECS = 60;
+
+// ── Ressort definitions (id, label, grid-area class) ───────────────
+const RESSORTS = [
+  { id: 'politik', label: 'Politik' },
+  { id: 'wirtschaft', label: 'Wirtschaft' },
+  { id: 'wissen', label: 'Wissenschaft & Technik' },
+  { id: 'people', label: 'People & Style' },
+  { id: 'kultur', label: 'Kultur' },
+  { id: 'sport', label: 'Sport' },
+  { id: 'medien', label: 'Medien & Digitales' },
+  { id: 'ki', label: 'KI-News' },
+  { id: 'weather', label: 'Wetter' },
+  { id: 'regional', label: 'Regional' },
+];
+
+// ── Settings: load/save visible ressorts ───────────────────────────
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem('newsdesk_ressorts');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // default: all visible
+  const def = {};
+  RESSORTS.forEach(r => def[r.id] = true);
+  return def;
+}
+function saveSettings(settings) {
+  try { localStorage.setItem('newsdesk_ressorts', JSON.stringify(settings)); } catch(e) {}
+}
+let ressortSettings = loadSettings();
+
+function loadFocus() {
+  try {
+    const raw = localStorage.getItem('newsdesk_focus');
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {};
+}
+function saveFocus(f) {
+  try { localStorage.setItem('newsdesk_focus', JSON.stringify(f)); } catch(e) {}
+}
+let focusSettings = loadFocus();
+
+// Minimum slot limit: at most 10 total slots (n visible + f focus extras ≤ 10)
+// so no card shrinks below the area it has in the full-10-card state.
+function countSlots() {
+  const newsOrder = ['politik','wirtschaft','wissen','people','kultur','sport','medien','ki','regional'];
+  const visibleNews = newsOrder.filter(id => ressortSettings[id] !== false);
+  const f = visibleNews.filter(id => focusSettings[id] === true).length;
+  return { n: visibleNews.length, f };
+}
+function canAddFocus() { const {n, f} = countSlots(); return n + f < 9; }
+
+function applyLayout() {
+  const mainGrid = document.getElementById('main-grid');
+
+  // Hide/show all cards; clear focus class from hidden news cards
+  RESSORTS.forEach(r => {
+    const card = document.querySelector('.card[data-ressort="' + r.id + '"]');
+    if (!card) return;
+    const visible = ressortSettings[r.id] !== false;
+    card.style.display = visible ? 'flex' : 'none';
+    if (r.id !== 'weather') {
+      if (!visible) { card.classList.remove('is-focus'); focusSettings[r.id] = false; }
+      else card.classList.toggle('is-focus', focusSettings[r.id] === true);
+    }
+  });
+
+  // Mobile: flex column handles everything, skip grid math
+  if (window.innerWidth <= 860) {
+    mainGrid.style.gridTemplateColumns = '';
+    mainGrid.style.gridTemplateRows = '';
+    return;
+  }
+
+  // Weather is handled separately in a fixed-width column — excluded from news layout
+  const newsOrder = ['politik','wirtschaft','wissen','people','kultur','sport','medien','ki','regional'];
+  const weatherVisible = ressortSettings.weather !== false;
+  const visibleNews = newsOrder.filter(id => ressortSettings[id] !== false);
+
+  // Safety: clear all focus if slots would exceed max (9 news cards × 1 slot min)
+  let focusNews = visibleNews.filter(id => focusSettings[id] === true);
+  if (visibleNews.length + focusNews.length > 9) {
+    visibleNews.forEach(id => { focusSettings[id] = false; });
+    saveFocus(focusSettings);
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('is-focus'));
+    focusNews = [];
+  }
+
+  // Sort: all non-focus news first (preserve order), then focus news (preserve order)
+  // This guarantees non-focus cards always fill complete rows before focus cards appear,
+  // preventing focus-card skip-ahead from unequally expanding non-focus cards.
+  const nonFocusNews = visibleNews.filter(id => focusSettings[id] !== true);
+  const sortedNews = [...nonFocusNews, ...focusNews];
+
+  // Total slots: each non-focus = 1, each focus = 2
+  const totalSlots = nonFocusNews.length + focusNews.length * 2;
+
+  let cols;
+  if (totalSlots <= 2)      cols = Math.max(1, totalSlots);
+  else if (totalSlots <= 3) cols = 3;
+  else if (totalSlots <= 4) cols = 2;
+  else if (totalSlots <= 6) cols = 3;
+  else if (totalSlots <= 8) cols = 4;
+  else                      cols = 5;
+
+  // Greedy packer — focus cards are always last, so skips only occur in edge cases
+  // where focus cards can't fit in the current row. Never expand a previous card on skip.
+  const placements = [];
+  let curRow = 1, curCol = 1;
+  for (const id of sortedNews) {
+    const isFocus = focusSettings[id] === true;
+    const span = isFocus ? 2 : 1;
+    const remaining = cols - (curCol - 1);
+    if (span > remaining) { curRow++; curCol = 1; }
+    placements.push({ id, col: curCol, row: curRow, span, isFocus });
+    curCol += span;
+    if (curCol > cols) { curRow++; curCol = 1; }
+  }
+
+  // Fill gaps in each row
+  const rows = placements.length > 0 ? placements[placements.length - 1].row : 1;
+  for (let r = 1; r <= rows; r++) {
+    const rowCards = placements.filter(p => p.row === r);
+    const usedSlots = rowCards.reduce((s, p) => s + p.span, 0);
+    const gap = cols - usedSlots;
+    if (gap > 0) {
+      const fillable = rowCards.filter(p => !p.isFocus);
+      const hasFocusInRow = rowCards.some(p => p.isFocus);
+      if (fillable.length > 0) {
+        // In rows with focus cards: only fill if gap distributes perfectly equally
+        // (avoids making some normal cards wider than others)
+        // In rows with only normal cards: always fill (classic last-row behaviour)
+        if (!hasFocusInRow || gap % fillable.length === 0) {
+          const baseAdd = Math.floor(gap / fillable.length);
+          const extraAdd = gap % fillable.length;
+          fillable.forEach((p, i) => { p.span += baseAdd + (i < extraAdd ? 1 : 0); });
+          let col = 1;
+          for (const p of rowCards) { p.col = col; col += p.span; }
+        }
+        // else: mixed row, uneven gap — leave it; small empty space beats unequal cards
+      }
+    }
+  }
+
+  // Grid template: news cols only (weather is a flex sibling, not in the grid)
+  // Row 1 is fixed at 320px to match weather card height; rows 2+ share remaining space equally
+  mainGrid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+  mainGrid.style.gridTemplateRows = rows > 1
+    ? '320px' + ' 1fr'.repeat(rows - 1)
+    : '1fr';
+
+  // Apply news card placements
+  for (const p of placements) {
+    const card = document.querySelector('.card[data-ressort="' + p.id + '"]');
+    if (card) {
+      card.style.gridColumn = p.col + ' / span ' + p.span;
+      card.style.gridRow = String(p.row);
+    }
+  }
+
+  // Clear inline styles for hidden news cards
+  newsOrder.forEach(id => {
+    if (ressortSettings[id] === false) {
+      const card = document.querySelector('.card[data-ressort="' + id + '"]');
+      if (card) { card.style.gridColumn = ''; card.style.gridRow = ''; }
+    }
+  });
+
+  // Weather is a flex sibling of #main-grid — no grid placement needed.
+  // Visibility is handled in the RESSORTS loop above (display: flex / none).
+}
+
+function renderSettingsPanel() {
+  const list = document.getElementById('settings-list');
+  const allOrder = ['politik','wirtschaft','wissen','people','kultur','sport','medien','ki','weather','regional'];
+
+  function buildHTML() {
+    const {n, f} = countSlots();
+    const slotsLeft = 9 - n - f; // how many more focus slots are available (max 9 news slots)
+    return RESSORTS.map(r => {
+      const isVisible = ressortSettings[r.id] !== false;
+      const isFocused = focusSettings[r.id] === true;
+      // Weather never gets a focus button
+      const focusAllowed = isFocused || slotsLeft > 0;
+      const focusBtn = isVisible && r.id !== 'weather' ? `
+        <button class="focus-btn${isFocused ? ' active' : ''}"
+                data-focus-id="${r.id}"
+                ${!focusAllowed ? 'disabled' : ''}
+                title="${!focusAllowed ? 'Zuerst weitere Ressorts abwählen, um Platz zu schaffen' : isFocused ? 'Schwerpunkt aufheben' : 'Schwerpunkt setzen'}">
+          ★ Schwerpunkt
+        </button>` : '';
+      const hint = isVisible && r.id !== 'weather' && !focusAllowed
+        ? `<span class="focus-hint">← Mehr abwählen, um Schwerpunkt zu ermöglichen</span>`
+        : '';
+      return `
+        <div class="settings-row">
+          <span>${r.label}</span>
+          <div class="settings-controls">
+            <label class="toggle">
+              <input type="checkbox" data-id="${r.id}" ${isVisible ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+            ${focusBtn}
+          </div>
+          ${hint}
+        </div>`;
+    }).join('');
+  }
+
+  list.innerHTML = buildHTML();
+
+  list.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', () => {
+      const id = input.dataset.id;
+      ressortSettings[id] = input.checked;
+      if (!input.checked) {
+        // When hiding a card, also clear its focus
+        focusSettings[id] = false;
+        saveFocus(focusSettings);
+      }
+      saveSettings(ressortSettings);
+      applyLayout();
+      // Re-render panel to update focus button states
+      list.innerHTML = buildHTML();
+      rebindEvents();
+    });
+  });
+
+  list.querySelectorAll('.focus-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.focusId;
+      focusSettings[id] = !focusSettings[id];
+      saveFocus(focusSettings);
+      applyLayout();
+      list.innerHTML = buildHTML();
+      rebindEvents();
+    });
+  });
+
+  function rebindEvents() {
+    list.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      input.addEventListener('change', () => {
+        const id = input.dataset.id;
+        ressortSettings[id] = input.checked;
+        if (!input.checked) { focusSettings[id] = false; saveFocus(focusSettings); }
+        saveSettings(ressortSettings);
+        applyLayout();
+        list.innerHTML = buildHTML();
+        rebindEvents();
+      });
+    });
+    list.querySelectorAll('.focus-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.focusId;
+        focusSettings[id] = !focusSettings[id];
+        saveFocus(focusSettings);
+        applyLayout();
+        list.innerHTML = buildHTML();
+        rebindEvents();
+      });
+    });
+  }
+}
+
+document.getElementById('settings-toggle').addEventListener('click', () => {
+  renderSettingsPanel();
+  document.getElementById('settings-overlay').classList.add('open');
+});
+document.getElementById('settings-close').addEventListener('click', () => {
+  document.getElementById('settings-overlay').classList.remove('open');
+});
+document.getElementById('settings-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'settings-overlay') document.getElementById('settings-overlay').classList.remove('open');
+});
+
+document.getElementById('impressum-open').addEventListener('click', () => {
+  document.getElementById('impressum-overlay').classList.add('open');
+});
+document.getElementById('impressum-close').addEventListener('click', () => {
+  document.getElementById('impressum-overlay').classList.remove('open');
+});
+document.getElementById('impressum-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'impressum-overlay') document.getElementById('impressum-overlay').classList.remove('open');
+});
+
+window.addEventListener('resize', applyLayout);
 
 // ── Clock ──────────────────────────────────────────────────────────
 function getGreeting() {
@@ -206,15 +581,18 @@ function renderNews(items, containerId) {
         ${isNew(i.pubDate) ? '<span class="new-dot" title="Weniger als 1 Stunde alt"></span>' : '<span style="width:7px;display:block"></span>'}
       </span>
     </a>`).join('');
+  // Check overflow for scroll-fade hint
   requestAnimationFrame(() => {
-    const avail = container.parentElement.clientHeight;
-    let total = 0;
-    [...container.querySelectorAll('.news-item')].forEach(el => {
-      total += el.offsetHeight;
-      if (total > avail) el.remove();
-    });
-    const rem = container.querySelectorAll('.news-item');
-    if (rem.length) rem[rem.length-1].style.borderBottom = 'none';
+    const card = container.closest('.card');
+    if (card) {
+      const body = card.querySelector('.card-body');
+      if (body.scrollHeight > body.clientHeight + 2) card.classList.add('has-overflow');
+      else card.classList.remove('has-overflow');
+      body.addEventListener('scroll', () => {
+        const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 2;
+        card.classList.toggle('has-overflow', !atBottom && body.scrollHeight > body.clientHeight + 2);
+      });
+    }
   });
 }
 
@@ -241,9 +619,10 @@ const SERIOUS_FEEDS = [
   { url: 'https://www.n-tv.de/rss', label: 'n-tv' },
 ];
 
-const KLATSCH_FEEDS = [
+const PEOPLE_FEEDS = [
   { url: 'https://www.promiflash.de/feed', label: 'Promi' },
   { url: 'https://www.gala.de/feed/standard-rss/', label: 'Gala' },
+  { url: 'https://www.vogue.de/rss/feed/vogueall', label: 'Vogue' },
   { url: 'https://www.stern.de/feed.rss', label: 'Stern' },
   { url: 'https://www.rtl.de/cms/service/rss.html', label: 'RTL' },
   { url: 'https://www.bunte.de/feed', label: 'Bunte' },
@@ -261,14 +640,12 @@ const MEDIEN_FEEDS = [
   { url: 'https://www.kress.de/feed', label: 'Kress' },
 ];
 
-// KI: Heise + t3n + netzwelt (mit KI-Filter)
 const KI_FEEDS = [
   { url: 'https://www.heise.de/rss/heise-atom.xml', label: 'Heise' },
   { url: 'https://t3n.de/rss.xml', label: 't3n' },
   { url: 'https://www.netzwelt.de/news/feed.xml', label: 'Netzwelt' },
 ];
 
-// Wissenschaft & Technik: Spiegel Wissenschaft + t3n + netzwelt + WinFuture
 const WISSEN_FEEDS = [
   { url: 'https://www.spiegel.de/wissenschaft/index.rss', label: 'Spiegel' },
   { url: 'https://www.spiegel.de/wissenschaft/mensch/index.rss', label: 'Spiegel' },
@@ -278,13 +655,11 @@ const WISSEN_FEEDS = [
   { url: 'https://winfuture.de/rss.xml', label: 'WinFuture' },
 ];
 
-// Kultur: eigene Kulturfeeds
 const KULTUR_FEEDS = [
   { url: 'https://www.spiegel.de/kultur/index.rss', label: 'Spiegel' },
   { url: 'https://www.zeit.de/kultur/index', label: 'Zeit' },
 ];
 
-// Regional: SZ Bayern + München
 const REGIONAL_FEEDS = [
   { url: 'https://rss.sueddeutsche.de/rss/Bayern', label: 'SZ' },
   { url: 'https://rss.sueddeutsche.de/rss/Muenchen', label: 'SZ' },
@@ -295,7 +670,6 @@ const AI_KW = /\b(KI|künstlich|Künstliche Intelligenz|AI|ChatGPT|Claude|Gemini
 
 // ── Ressort filters ────────────────────────────────────────────────
 const SPORT_KW = /\b(Fußball|Bundesliga|Champions.?League|DFB|FIFA|UEFA|Weltmeisterschaft|WM 20|EM 20|Formel.?1|F1|Grand Prix|Tennis|Wimbledon|Roland.?Garros|US.?Open|Australian.?Open|NBA|NFL|NHL|Handball|Basketball|Volleyball|Leichtathletik|Olympia|Tour.?de.?France|Radsport|Biathlon|Eishockey|Boxen|MMA|Rugby|Transfermarkt|Aufstieg|Abstieg|Meister|Pokal|Spieltag|Halbfinale|Viertelfinale)\b/i;
-const TV_KW = /\b(Talkshow|Maischberger|Lanz|Illner|Plasberg|Hart aber fair|Anne Will|Dschungelcamp|Big Brother|DSDS|Bachelor|Bachelorette|GZSZ|Tatort|Lindenstraße)\b/i;
 const GOLF_POLITIK_KW = /\b(Iran|Ukraine|Gaza|Nahost|Krieg|Angriff|Eskalation|Verhandlung|Diplomatie|Sanktion)\b/i;
 
 const FILTERS = {
@@ -308,7 +682,6 @@ const FILTERS = {
     exclude: SPORT_KW
   },
   sport: {
-    // Golf only counts as sport if no politik keywords present
     include: SPORT_KW,
     exclude: /\b(Irankrieg|Liveblog Iran|Liveblog Ukraine|Liveblog Gaza|Liveblog Nahost)\b/i,
     excludeGolfPolitik: true
@@ -326,7 +699,6 @@ function filterRessort(items, ressort) {
     const text = item.title + ' ' + item.description + ' ' + item.cats;
     if (!f.include.test(text)) continue;
     if (f.exclude && f.exclude.test(item.title)) continue;
-    // Special Golf/Politik check
     if (f.excludeGolfPolitik && /\bGolf\b/i.test(item.title) && GOLF_POLITIK_KW.test(item.title)) continue;
     if (seen.has(item.title)) continue;
     const c = perSource[item.source] || 0;
@@ -341,19 +713,20 @@ function filterRessort(items, ressort) {
 
 // ── Load functions ─────────────────────────────────────────────────
 async function loadSeriousNews() {
+  if (ressortSettings.politik === false && ressortSettings.wirtschaft === false && ressortSettings.sport === false) return;
   const all = await fetchFeeds(SERIOUS_FEEDS, 20);
-  renderNews(filterRessort(all, 'politik'), 'politik');
-  renderNews(filterRessort(all, 'wirtschaft'), 'wirtschaft');
-  renderNews(filterRessort(all, 'sport'), 'sport');
+  if (ressortSettings.politik !== false) renderNews(filterRessort(all, 'politik'), 'politik');
+  if (ressortSettings.wirtschaft !== false) renderNews(filterRessort(all, 'wirtschaft'), 'wirtschaft');
+  if (ressortSettings.sport !== false) renderNews(filterRessort(all, 'sport'), 'sport');
 }
 
 async function loadWissen() {
+  if (ressortSettings.wissen === false) return;
   const all = await fetchFeeds(WISSEN_FEEDS, 15);
-  // KI articles go to KI only — exclude from Wissenschaft & Technik
   const seen = new Set();
   const out = all.filter(i => {
     if (seen.has(i.title)) return false;
-    if (AI_KW.test(i.title + ' ' + i.description)) return false; // KI → only in KI-News
+    if (AI_KW.test(i.title + ' ' + i.description)) return false;
     seen.add(i.title);
     return true;
   });
@@ -361,20 +734,23 @@ async function loadWissen() {
 }
 
 async function loadKultur() {
+  if (ressortSettings.kultur === false) return;
   const all = await fetchFeeds(KULTUR_FEEDS, 15);
   const seen = new Set();
   const out = all.filter(i => { if (seen.has(i.title)) return false; seen.add(i.title); return true; });
   renderNews(out, 'kultur');
 }
 
-async function loadKlatsch() {
-  const all = await fetchFeeds(KLATSCH_FEEDS, 10);
+async function loadPeople() {
+  if (ressortSettings.people === false) return;
+  const all = await fetchFeeds(PEOPLE_FEEDS, 10);
   const seen = new Set();
   const out = all.filter(i => { if (seen.has(i.title)) return false; seen.add(i.title); return true; });
-  renderNews(out, 'klatsch');
+  renderNews(out, 'people');
 }
 
 async function loadMedien() {
+  if (ressortSettings.medien === false) return;
   const all = await fetchFeeds(MEDIEN_FEEDS, 10);
   const seen = new Set();
   const out = all.filter(i => {
@@ -387,6 +763,7 @@ async function loadMedien() {
 }
 
 async function loadKI() {
+  if (ressortSettings.ki === false) return;
   const all = await fetchFeeds(KI_FEEDS, 20);
   const seen = new Set();
   const out = all.filter(i => {
@@ -399,6 +776,7 @@ async function loadKI() {
 }
 
 async function loadRegional() {
+  if (ressortSettings.regional === false) return;
   const all = await fetchFeeds(REGIONAL_FEEDS, 15);
   const seen = new Set();
   const out = all.filter(i => { if (seen.has(i.title)) return false; seen.add(i.title); return true; });
@@ -407,6 +785,7 @@ async function loadRegional() {
 
 // ── Wetter (kompakt) ───────────────────────────────────────────────
 async function loadWeather() {
+  if (ressortSettings.weather === false) return;
   try {
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1351&longitude=11.5820&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Europe%2FBerlin&forecast_days=5';
     const r = await fetch(url);
@@ -450,12 +829,14 @@ function loadAll() {
   loadSeriousNews();
   loadWissen();
   loadKultur();
-  loadKlatsch();
+  loadPeople();
   loadMedien();
   loadKI();
   loadRegional();
   loadWeather();
 }
+
+applyLayout();
 loadAll();
 </script>
 </body>
