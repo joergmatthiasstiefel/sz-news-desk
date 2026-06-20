@@ -68,7 +68,20 @@
   .weather-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .weather-meta-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 4px 6px; font-size: 10px; color: var(--text2); }
   .weather-meta-item strong { display: block; font-size: 11px; font-weight: 500; color: var(--text); }
-  .weather-forecast { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .weather-sun { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .weather-sparkline-wrap { background: var(--surface2); border-radius: var(--radius-sm); padding: 6px 8px; }
+  .weather-sparkline-label { font-size: 9px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .weather-sparkline-svg { display: block; width: 100%; height: 64px; }
+  .weather-sparkline-label-text { font-size: 8px; fill: var(--text2); font-family: 'Inter', sans-serif; }
+  .weather-week { display: flex; flex-direction: column; gap: 3px; }
+  .weather-week-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 11px; color: var(--text2); }
+  .weather-week-day { width: 28px; font-weight: 500; color: var(--text); }
+  .weather-week-icon { width: 20px; text-align: center; }
+  .weather-week-rain { flex: 1; text-align: right; font-size: 10px; color: var(--text3); }
+  .weather-week-temps { display: flex; gap: 6px; font-size: 11px; min-width: 56px; justify-content: flex-end; }
+  .weather-week-max { color: var(--text); font-weight: 500; }
+  .weather-week-min { color: var(--text3); }
+  .weather-forecast { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
   .forecast-day { background: var(--surface2); border-radius: var(--radius-sm); padding: 5px 3px; text-align: center; font-size: 9px; color: var(--text2); }
   .forecast-day strong { display: block; font-size: 13px; margin-bottom: 1px; }
   .forecast-day span { display: block; font-size: 9px; }
@@ -114,7 +127,7 @@
 
   /* ===== Desktop layout ===== */
   /* Weather sits as a fixed-width flex sibling next to #main-grid */
-  .card-weather    { align-self: flex-start; flex-shrink: 0; width: 200px; max-height: 320px; }
+  .card-weather    { align-self: stretch; flex-shrink: 0; width: 200px; }
 
   /* ===== Mobile layout ===== */
   @media (max-width: 860px) {
@@ -369,11 +382,9 @@ function applyLayout() {
   }
 
   // Grid template: news cols only (weather is a flex sibling, not in the grid)
-  // Row 1 is fixed at 320px to match weather card height; rows 2+ share remaining space equally
+  // All rows share space equally; weather card stretches to full main height via align-self:stretch
   mainGrid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-  mainGrid.style.gridTemplateRows = rows > 1
-    ? '320px' + ' 1fr'.repeat(rows - 1)
-    : '1fr';
+  mainGrid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
 
   // Apply news card placements
   for (const p of placements) {
@@ -787,13 +798,55 @@ async function loadRegional() {
 async function loadWeather() {
   if (ressortSettings.weather === false) return;
   try {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1351&longitude=11.5820&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=Europe%2FBerlin&forecast_days=5';
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=48.1351&longitude=11.5820&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,winddirection_10m,relative_humidity_2m,surface_pressure&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,sunrise,sunset,uv_index_max&timezone=Europe%2FBerlin&forecast_days=8';
     const r = await fetch(url);
     const d = await r.json();
-    const c = d.current, day = d.daily;
+    const c = d.current, day = d.daily, hourly = d.hourly;
     const codes = {0:'Klarer Himmel',1:'Meist klar',2:'Teilweise bewölkt',3:'Bedeckt',45:'Neblig',48:'Eisnebel',51:'Leichter Nieselregen',53:'Nieselregen',55:'Starker Nieselregen',61:'Leichter Regen',63:'Regen',65:'Starker Regen',71:'Leichter Schneefall',73:'Schneefall',75:'Starker Schneefall',80:'Leichte Schauer',81:'Schauer',82:'Starke Schauer',95:'Gewitter'};
     const icons = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️'};
     const shortDays = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const dirArrow = deg => {
+      const arrows = ['↓','↙','←','↖','↑','↗','→','↘'];
+      return arrows[Math.round(deg / 45) % 8];
+    };
+    const fmtTime = iso => new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    // Sparkline: nächste 12h ab aktueller Stunde
+    const nowIso = d.current.time;
+    let startIdx = hourly.time.findIndex(t => t >= nowIso);
+    if (startIdx === -1) startIdx = 0;
+    const sparkTemps = hourly.time.slice(startIdx, startIdx + 12).map((t, i) => hourly.temperature_2m[startIdx + i]);
+    const sparkLabels = hourly.time.slice(startIdx, startIdx + 12);
+    const minT = Math.min(...sparkTemps), maxT = Math.max(...sparkTemps);
+    const range = (maxT - minT) || 1;
+    const svgW = 280, svgH = 64, padX = 14, padTop = 16, padBottom = 18;
+    const stepX = (svgW - padX * 2) / (sparkTemps.length - 1);
+    const points = sparkTemps.map((t, i) => {
+      const x = padX + i * stepX;
+      const y = padTop + (svgH - padTop - padBottom) * (1 - (t - minT) / range);
+      return [x, y, t];
+    });
+    const pathD = points.map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`)).join(' ');
+    const areaD = `${pathD} L${points[points.length-1][0]},${svgH - padBottom} L${points[0][0]},${svgH - padBottom} Z`;
+    const dots = points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="1.6" fill="var(--accent)" />`).join('');
+    // Temperatur-Labels: jeden 3. Punkt sowie den ersten und letzten beschriften
+    const labelIdxs = new Set([0, points.length - 1]);
+    for (let i = 0; i < points.length; i += 3) labelIdxs.add(i);
+    const tempLabels = [...labelIdxs].sort((a,b)=>a-b).map(i => {
+      const [x, y, t] = points[i];
+      const above = y > svgH / 2; // bei tiefem Punkt Label oberhalb platzieren, sonst unterhalb
+      const ty = above ? y - 6 : y + 11;
+      const anchor = i === 0 ? 'start' : (i === points.length - 1 ? 'end' : 'middle');
+      return `<text x="${x}" y="${ty}" text-anchor="${anchor}" class="weather-sparkline-label-text">${Math.round(t)}°</text>`;
+    }).join('');
+    const hourLabels = [0, 3, 6, 9, 11].filter(i => i < points.length).map(i => {
+      const hr = new Date(sparkLabels[i]).getHours();
+      const anchor = i === 0 ? 'start' : (i === points.length - 1 ? 'end' : 'middle');
+      return `<text x="${points[i][0]}" y="${svgH - 3}" text-anchor="${anchor}" class="weather-sparkline-label-text" opacity="0.7">${hr}h</text>`;
+    }).join('');
+    const firstHour = new Date(sparkLabels[0]).getHours();
+    const lastHour = new Date(sparkLabels[sparkLabels.length-1]).getHours();
+
     document.getElementById('weather-updated').textContent = 'jetzt';
     document.getElementById('weather-body').innerHTML = `
       <div class="weather-compact">
@@ -803,18 +856,34 @@ async function loadWeather() {
         </div>
         <div class="weather-meta">
           <div class="weather-meta-item"><strong>↑${Math.round(day.temperature_2m_max[0])}° ↓${Math.round(day.temperature_2m_min[0])}°</strong>Heute</div>
-          <div class="weather-meta-item"><strong>${Math.round(c.windspeed_10m)} km/h</strong>Wind</div>
+          <div class="weather-meta-item"><strong>${dirArrow(c.winddirection_10m)} ${Math.round(c.windspeed_10m)} km/h</strong>Wind</div>
           <div class="weather-meta-item"><strong>${day.precipitation_probability_max[0]}%</strong>Regen</div>
-          <div class="weather-meta-item"><strong>${Math.round(c.apparent_temperature)}°</strong>Gefühlt</div>
+          <div class="weather-meta-item"><strong>${Math.round(c.relative_humidity_2m)}%</strong>Luftfeuchte</div>
+          <div class="weather-meta-item"><strong>${Math.round(c.surface_pressure)} hPa</strong>Luftdruck</div>
+          <div class="weather-meta-item"><strong>${day.uv_index_max[0].toFixed(1)}</strong>UV-Index</div>
         </div>
-        <div class="weather-forecast">
-          ${[1,2,3,4].map(i => {
+        <div class="weather-sun">
+          <div class="weather-meta-item"><strong>☀️ ${fmtTime(day.sunrise[0])}</strong>Aufgang</div>
+          <div class="weather-meta-item"><strong>🌙 ${fmtTime(day.sunset[0])}</strong>Untergang</div>
+        </div>
+        <div class="weather-sparkline-wrap">
+          <div class="weather-sparkline-label">${firstHour}–${lastHour} Uhr · Temperaturverlauf</div>
+          <svg class="weather-sparkline-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <path d="${areaD}" fill="var(--accent)" opacity="0.08" />
+            <path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="1.6" />
+            ${dots}
+            ${tempLabels}
+            ${hourLabels}
+          </svg>
+        </div>
+        <div class="weather-week">
+          ${[1,2,3,4,5,6,7].map(i => {
             const date = new Date(day.time[i]);
-            return `<div class="forecast-day">
-              <strong>${icons[day.weathercode[i]]||'–'}</strong>
-              ${shortDays[date.getDay()]}
-              <span>↑${Math.round(day.temperature_2m_max[i])}°</span>
-              <span style="color:var(--text3)">↓${Math.round(day.temperature_2m_min[i])}°</span>
+            return `<div class="weather-week-row">
+              <span class="weather-week-day">${shortDays[date.getDay()]}</span>
+              <span class="weather-week-icon">${icons[day.weathercode[i]]||'–'}</span>
+              <span class="weather-week-rain">${day.precipitation_probability_max[i]}% Regen</span>
+              <span class="weather-week-temps"><span class="weather-week-max">${Math.round(day.temperature_2m_max[i])}°</span><span class="weather-week-min">${Math.round(day.temperature_2m_min[i])}°</span></span>
             </div>`;
           }).join('')}
         </div>
