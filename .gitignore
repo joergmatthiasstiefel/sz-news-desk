@@ -1,1 +1,20 @@
 node_modules/
+
+# --- Arbeitsordner-Hülle: nichts davon gehört ins sz-news-desk-Repo ---
+# macOS / Laufzeit-Kram
+.DS_Store
+nohup.out
+
+# Claude-Code-Arbeitsdateien
+.claude/
+CLAUDE.md
+pensum-devserver.py
+
+# Eigenständige Projekte (haben jeweils ihr eigenes Git-Repo)
+DiktierAssistent/
+DiktierAssistent-Web/
+caligatus-dashboard/
+caligatus-website/
+excalidraw-mcp/
+gmx-mcp-server/
+google-contacts-mcp-server/
